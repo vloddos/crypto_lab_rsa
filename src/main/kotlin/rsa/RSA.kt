@@ -20,14 +20,6 @@ class RSA {
     val publicKey get() = Pair(publicExp, modulus)
     val privateKey get() = Pair(privateExp, modulus)
 
-    constructor(modulus: BigInteger, publicExp: BigInteger, privateExp: BigInteger) {
-        this.modulus = modulus
-        modulusByteLength = modulus.bitLength() / Byte.SIZE_BITS + 1
-        numberBytesReadFromSource = modulusByteLength - 2
-        this.publicExp = publicExp
-        this.privateExp = privateExp
-    }
-
     constructor(numBits: Int, iterations: Int, algorithm: String) {
         val p = randomProbablyPrime(numBits, iterations, algorithm)
         val q = randomProbablyPrime(numBits, iterations, algorithm)
@@ -48,25 +40,13 @@ class RSA {
     }
 
     //available???????????
-    fun encrypt(inputStream: InputStream, outputStream: OutputStream) {
+    fun encrypt(inputStream: InputStream, outputStream: OutputStream) =
         inputStream.use { `is` ->
             outputStream.use { os ->
                 while (`is`.available() >= numberBytesReadFromSource) {
-                    var bytes = `is`.readNBytes(numberBytesReadFromSource).apply {
-                        if (size >= modulusByteLength)
-                            println("read bytes size $size")
-                    }
+                    var bytes = `is`.readNBytes(numberBytesReadFromSource)
                     val number = BigInteger(byteArrayOf(0, *bytes))
-                    bytes = number.modPow(publicExp, modulus).toByteArray().apply {
-                        if (size > modulusByteLength) {
-                            modulus.toByteArray().run {
-                                println("modulus bytes size $size")
-                                println("modulus bytes ${Arrays.toString(this)}")
-                            }
-                            println("encrypted bytes size $size")
-                            println("encrypted bytes ${Arrays.toString(this)}")
-                        }
-                    }
+                    bytes = number.modPow(publicExp, modulus).toByteArray()
                     os.write(ByteArray(modulusByteLength - bytes.size) { 0 } + bytes)
                 }
 
@@ -81,10 +61,8 @@ class RSA {
                 }
             }
         }
-        println("modulus byte length $modulusByteLength")
-    }
 
-    fun decrypt(inputStream: InputStream, outputStream: OutputStream) {
+    fun decrypt(inputStream: InputStream, outputStream: OutputStream) =
         inputStream.use { `is` ->
             outputStream.use { os ->
                 while (`is`.available() > modulusByteLength + Int.SIZE_BYTES) {//assumed modulusByteLength>Int.SIZE_BYTES
@@ -94,7 +72,8 @@ class RSA {
                     when {
                         bytes.size < numberBytesReadFromSource ->
                             bytes = ByteArray(numberBytesReadFromSource - bytes.size) { 0 } + bytes
-                        bytes.size == numberBytesReadFromSource + 1 -> bytes = bytes.sliceArray(1..bytes.lastIndex)
+                        bytes.size == numberBytesReadFromSource + 1 ->
+                            bytes = bytes.sliceArray(1..bytes.lastIndex)
                     }
                     os.write(bytes)
                 }
@@ -104,17 +83,19 @@ class RSA {
                 bytes = number.modPow(privateExp, modulus).toByteArray()
 
                 val numberLastBytes =
-                    if (`is`.available() > 0) DataInputStream(`is`).use { it.readInt() } else numberBytesReadFromSource
+                    if (`is`.available() > 0)
+                        DataInputStream(`is`).use { it.readInt() }
+                    else
+                        numberBytesReadFromSource
 
                 when {
                     bytes.size < numberLastBytes ->
                         bytes = ByteArray(numberLastBytes - bytes.size) { 0 } + bytes
-                    bytes.size == numberLastBytes + 1 -> bytes = bytes.sliceArray(1..bytes.lastIndex)
+                    bytes.size == numberLastBytes + 1 ->
+                        bytes = bytes.sliceArray(1..bytes.lastIndex)
                 }
 
                 os.write(bytes)
             }
         }
-        println("modulus byte length $modulusByteLength")
-    }
 }
