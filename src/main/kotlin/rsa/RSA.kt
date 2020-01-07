@@ -1,11 +1,13 @@
 package rsa
 
+import randomProbablyPrime
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import java.math.BigInteger
 import java.math.BigInteger.ONE
+import java.math.BigInteger.TWO
 import java.util.*
 
 class RSA {
